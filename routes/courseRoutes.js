@@ -1,20 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const courseController = require('../controllers/courseController');
+const { ensureAuthenticated, ensureAdmin} = require('../controllers/authController');
 
-// POST /courses       → criar um curso
-router.post('/', courseController.createCourse);
-
-// GET /courses        → listar todos os cursos
+// Rotas públicas (ex.: listar e buscar)
 router.get('/', courseController.getAllCourses);
-
-// GET /courses/:id    → buscar curso por ID
 router.get('/:id', courseController.getCourseById);
 
-// PUT /courses/:id    → atualizar curso por ID
-router.patch('/:id', courseController.updateCourse);
-
-// DELETE /courses/:id → deletar curso por ID
-router.delete('/:id', courseController.deleteCourse);
+// Rotas protegidas (criar, atualizar, deletar) — só para quem está logado
+router.post('/', ensureAuthenticated, ensureAdmin, courseController.createCourse);
+router.put('/:id', ensureAuthenticated, ensureAdmin,courseController.updateCourse);
+router.delete('/:id', ensureAuthenticated, ensureAdmin,courseController.deleteCourse);
 
 module.exports = router;

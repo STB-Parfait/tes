@@ -1,11 +1,22 @@
 const { User } = require('../models');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 // 1. Criar um novo usuário (aluno ou admin)
 exports.createUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-        // Aqui, você poderia incluir lógica para hash de senha, mas deixaremos em texto simples para simplicidade.
-        const newUser = await User.create({ name, email, password, role });
+
+        // 1.1. Gerar hash da senha
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        const newUser = await User.create({
+            name,
+            email,
+            password: hashedPassword, // <— salva o hash, não o texto puro
+            role,
+        });
+
         // Retornamos sem a senha por segurança:
         const { password: _pwd, ...userWithoutPassword } = newUser.toJSON();
         return res.status(201).json(userWithoutPassword);
@@ -15,11 +26,11 @@ exports.createUser = async (req, res) => {
     }
 };
 
-// 2. Listar todos os usuários
+// 2. Listar todos os usuários (sem senha)
 exports.getAllUsers = async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'name', 'email', 'role', 'createdAt', 'updatedAt'], // não retornamos senha
+            attributes: ['id', 'name', 'email', 'role', 'createdAt', 'updatedAt'],
         });
         return res.status(200).json(users);
     } catch (error) {
@@ -28,7 +39,7 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
-// 3. Buscar um usuário por ID
+// 3. Buscar um usuário por ID (sem senha)
 exports.getUserById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -56,9 +67,13 @@ exports.updateUser = async (req, res) => {
             return res.status(404).json({ error: 'Usuário não encontrado.' });
         }
 
+        // Se veio novo password, gerar hash
+        if (password) {
+            user.password = await bcrypt.hash(password, saltRounds);
+        }
+
         user.name = name !== undefined ? name : user.name;
         user.email = email !== undefined ? email : user.email;
-        user.password = password !== undefined ? password : user.password;
         user.role = role !== undefined ? role : user.role;
 
         await user.save();
