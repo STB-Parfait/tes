@@ -1,20 +1,36 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const { ensureAuthenticated, ensureAdmin } = require('../middlewares/authMiddleware');
 
-// POST /users         → criar um usuário
+// Cadastro pode ser público (ou só admin, dependendo do requisito):
+// Se quiser só admin cadastrar qualquer usuário:
+// router.post('/', ensureAuthenticated, ensureAdmin, userController.createUser);
+//
+// Para deixar qualquer um cadastrar aluno (role=student), sem validar token:
 router.post('/', userController.createUser);
 
-// GET /users          → listar todos os usuários
-router.get('/', userController.getAllUsers);
+// Listar todos: só admin
+router.get('/', ensureAuthenticated, ensureAdmin, userController.getAllUsers);
 
-// GET /users/:id      → buscar usuário por ID
-router.get('/:id', userController.getUserById);
+// Buscar aluno/admin específico: só quem for admin ou for o próprio usuário
+router.get('/:id', ensureAuthenticated, async (req, res, next) => {
+    // Se o usuário for admin, pode. Se não, só pode buscar seu próprio id.
+    if (req.userRole === 'admin' || Number(req.params.id) === req.userId) {
+        return next();
+    }
+    return res.status(403).json({ error: 'Acesso negado.' });
+}, userController.getUserById);
 
-// PUT /users/:id      → atualizar usuário por ID
-router.patch('/:id', userController.updateUser);
+// Atualizar: só admin ou usuário que atualizar seu perfil
+router.put('/:id', ensureAuthenticated, async (req, res, next) => {
+    if (req.userRole === 'admin' || Number(req.params.id) === req.userId) {
+        return next();
+    }
+    return res.status(403).json({ error: 'Acesso negado.' });
+}, userController.updateUser);
 
-// DELETE /users/:id   → deletar usuário por ID
-router.delete('/:id', userController.deleteUser);
+// Deletar: só admin (cuidado ao permitir auto-delete)
+router.delete('/:id', ensureAuthenticated, ensureAdmin, userController.deleteUser);
 
 module.exports = router;

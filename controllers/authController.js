@@ -1,7 +1,12 @@
 const { User } = require('../models');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-// 1. Login: verifica email e senha; se OK, cria sessão
+// Mesmo secret do middleware (ideal em env var)
+const JWT_SECRET = process.env.JWT_SECRET || 'secreto_muito_forte_para_jwt';
+const JWT_EXPIRES_IN = '1d'; // token válido por 1 dia
+
+// 1. Login: compara credenciais, retorna token
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -11,50 +16,43 @@ exports.login = async (req, res) => {
             return res.status(401).json({ error: 'Credenciais inválidas.' });
         }
 
-        // 1.2. Comparar senha
+        // 1.2. Comparar senha plaintext com hash
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
             return res.status(401).json({ error: 'Credenciais inválidas.' });
         }
 
-        // 1.3. Se validou, salvar id do usuário na sessão
-        req.session.userId = user.id;
-        req.session.userRole = user.role;
+        // 1.3. Gerar payload com id e role (pode incluir mais dados, se quiser)
+        const payload = {
+            id: user.id,
+            role: user.role,
+        };
 
-        // Retornamos dados mínimos (sem senha):
-        const { id, name, email: userEmail, role } = user;
-        return res.status(200).json({ id, name, email: userEmail, role });
+        // 1.4. Gerar o token
+        const token = jwt.sign(payload, JWT_SECRET, {
+            expiresIn: JWT_EXPIRES_IN,
+        });
+
+        // 1.5. Retornar o token e os dados básicos do user
+        return res.status(200).json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
+        });
     } catch (error) {
         console.error('Erro no login:', error);
         return res.status(500).json({ error: 'Erro interno no login.' });
     }
 };
 
-// 2. Logout: destrói a sessão
+// Logout: na verdade, basta o client “esquecer” o token.
+// Porém, se quiser, pode ter essa rota pra o front chamar e simplesmente retornar sucesso.
 exports.logout = (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            console.error('Erro ao destruir sessão:', err);
-            return res.status(500).json({ error: 'Falha ao fazer logout.' });
-        }
-        // Opcionalmente limpar cookie no cliente:
-        res.clearCookie('connect.sid'); // nome padrão do cookie de sessão
-        return res.status(200).json({ message: 'Deslogado com sucesso.' });
-    });
-};
-
-// 3. Verificar se o usuário está logado (middleware)
-exports.ensureAuthenticated = (req, res, next) => {
-    if (req.session && req.session.userId) {
-        // o usuário está autenticado
-        return next();
-    }
-    return res.status(401).json({ error: 'Não autenticado.' });
-};
-
-exports.ensureAdmin = (req, res, next) => {
-    if (req.session.userRole === 'admin') {
-        return next();
-    }
-    return res.status(403).json({ error: 'Acesso negado: requer perfil de administrador.' });
+    // Como JWT é stateless, não há sessão a destruir no servidor.
+    // O cliente deve apagar o token armazenado (localStorage, etc).
+    return res.status(200).json({ message: 'Logout realizado (delete o token no client).' });
 };
