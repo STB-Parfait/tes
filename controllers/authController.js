@@ -56,3 +56,21 @@ exports.logout = (req, res) => {
     // O cliente deve apagar o token armazenado (localStorage, etc).
     return res.status(200).json({ message: 'Logout realizado (delete o token no client).' });
 };
+
+exports.getProfile = async (req, res) => {
+    try {
+        // req.userId foi preenchido no middleware ensureAuthenticated
+        const user = await User.findByPk(req.userId, {
+            attributes: ['id', 'name', 'email', 'role', 'createdAt', 'updatedAt'],
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado.' });
+        }
+
+        return res.status(200).json(user);
+    } catch (error) {
+        console.error('Erro ao obter perfil do usuário:', error);
+        return res.status(500).json({ error: 'Erro interno ao obter perfil.' });
+    }
+};
