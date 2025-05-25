@@ -1,6 +1,7 @@
+// /models/course.js
+
 module.exports = (sequelize, DataTypes) => {
     const Course = sequelize.define('Course', {
-        // Campos do Curso
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
@@ -11,18 +12,24 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
         },
         description: {
-            type: DataTypes.TEXT,
+            type: DataTypes.STRING,
             allowNull: true,
         },
         durationHours: {
             type: DataTypes.INTEGER,
-            allowNull: false,
-            defaultValue: 0, // duração em horas
+            allowNull: true,
         },
     }, {
         tableName: 'courses',
-        timestamps: true, // createdAt e updatedAt automáticos
+        timestamps: true,
     });
+
+    Course.associate = models => {
+        Course.hasMany(models.CourseVideo, {
+            foreignKey: 'courseId',
+            as: 'videos',
+        });
+    };
 
     return Course;
 };

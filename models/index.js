@@ -1,15 +1,35 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 
-// Cria a instância do Sequelize apontando para um arquivo SQLite local.
-// O arquivo será criado automaticamente ao sincronizar.
+// Instância do Sequelize usando SQLite
 const sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: path.join(__dirname, '../database.sqlite'),
-    logging: false, // desabilita logs SQL no console; pode habilitar se quiser
+    logging: false,
 });
 
-// Função para testar a conexão (opcional)
+// Importa os models
+const Course = require('./course')(sequelize, DataTypes);
+const User = require('./user')(sequelize, DataTypes);
+const CourseVideo = require('./courseVideo')(sequelize, DataTypes);
+
+// Cria o objeto db para poder passar para associate()
+const db = {
+    sequelize,
+    Sequelize,
+    Course,
+    User,
+    CourseVideo,
+};
+
+// Executa os associate() de cada model, se existir
+Object.values(db).forEach(model => {
+    if (model?.associate) {
+        model.associate(db);
+    }
+});
+
+// Teste de conexão (opcional)
 async function testConnection() {
     try {
         await sequelize.authenticate();
@@ -20,15 +40,4 @@ async function testConnection() {
 }
 testConnection();
 
-// Importa os modelos (vamos criar em seguida)
-const Course = require('./course')(sequelize, DataTypes);
-const User = require('./user')(sequelize, DataTypes);
-
-// Se houver relacionamentos, defina aqui. (Não precisamos aqui, pois são entidades independentes por enquanto)
-
-module.exports = {
-    sequelize,
-    Sequelize,
-    Course,
-    User,
-};
+module.exports = db;

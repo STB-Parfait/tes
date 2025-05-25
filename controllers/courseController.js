@@ -1,4 +1,4 @@
-const { Course } = require('../models');
+const { Course, CourseVideo } = require('../models');
 
 // 1. Criar um novo curso
 exports.createCourse = async (req, res) => {
@@ -27,7 +27,16 @@ exports.getAllCourses = async (req, res) => {
 exports.getCourseById = async (req, res) => {
     try {
         const { id } = req.params;
-        const course = await Course.findByPk(id);
+        const course = await Course.findByPk(id, {
+            include: [
+                {
+                    model: CourseVideo,
+                    as: 'videos',
+                    attributes: ['id', 'name', 'description', 'video', 'createdAt'],
+                },
+            ],
+        });
+
         if (!course) {
             return res.status(404).json({ error: 'Curso não encontrado.' });
         }
