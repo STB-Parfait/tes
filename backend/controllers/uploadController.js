@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         // Cria um nome único: timestamp + nome original
         const timestamp = Date.now();
-        const originalName = file.originalname.replace(/\s+/g, '_');
+        const originalName = file.originalname.replace(/\s+/g, '_'); // Substitui espaços por underscores
         cb(null, `${timestamp}_${originalName}`);
     },
 });
@@ -30,12 +30,13 @@ function fileFilter(req, file, cb) {
         'video/mp4',
         'video/avi',
         'video/x-matroska',
-        'video/quicktime',
+        'video/quicktime', // .mov
+        'video/webm',
     ];
     if (allowedMimes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('Tipo de arquivo inválido: só vídeos são permitidos.'));
+        cb(new Error('Tipo de arquivo inválido: só vídeos são permitidos com as extensões corretas.'));
     }
 }
 
