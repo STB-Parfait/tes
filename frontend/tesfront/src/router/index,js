@@ -1,0 +1,36 @@
+import { createRouter, createWebHistory } from 'vue-router';
+import HomePage from '../views/HomePage.vue';
+import CursosPage from '../views/CursosPage.vue';
+import LoginPage from '../views/LoginPage.vue';
+import CadastroPage from '../views/CadastroPage.vue'; // Vamos criar esta página
+
+const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: HomePage
+  },
+  {
+    path: '/cursos',
+    name: 'Cursos',
+    component: CursosPage
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginPage
+  },
+  {
+    path: '/cadastro',
+    name: 'Cadastro',
+    component: CadastroPage
+  }
+  // Você pode adicionar mais "cômodos" (rotas) aqui depois!
+];
+
+const router = createRouter({
+  history: createWebHistory(process.env.BASE_URL || '/'),
+  routes
+});
+
+export default router;
